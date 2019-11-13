@@ -49,8 +49,10 @@ server.get('/api/users', validateToken, (req, res) => {
     usersDb.find()
     .then(resp => {
         if (resp) {
-            // sanitize password
-            res.json(resp.map(({id, username, department})=>({id, username, department})))
+            res.json(resp
+                .filter(({department}) => department === res.locals.user.department) // only user's department
+                .map(({id, username, department}) => ({id, username, department})) // sanitize password
+            )
         }
         else {
             throw Error('No users')
