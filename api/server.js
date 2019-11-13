@@ -3,7 +3,7 @@ const helmet = require('helmet')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 
-const {validateReqBody, validateUnique, hashPassword, validateUsername, validatePassword} = require('./middleware/auth-middleware')
+const {validateReqBody, validateUnique, hashPassword, validateUsername, validatePassword, validateToken} = require('./middleware/auth-middleware')
 const usersDb = require('./users-model')
 
 const server = express()
@@ -42,11 +42,24 @@ server.post('/api/login', validateReqBody, validateUsername, validatePassword,  
     const {id, username, department} = res.locals.user
     const user = {id, username, department}
     const token = jwt.sign({id}, secret, {expiresIn: '18h'})
-    res.status(201).json({user, token})
+    res.json({user, token})
 })
 
-server.get('/api/users', (req, res) => {
-    
+server.get('/api/users', validateToken, (req, res) => {
+    usersDb.find()
+    .then(resp => {
+        if (resp) {
+            // sanitize password
+            res.json(resp.map(({id, username, department})=>({id, username, department})))
+        }
+        else {
+            throw Error('No users')
+        }
+    })
+    .catch(err => {
+        console.error(err)
+        res.sendStatus(500)
+    })
 })
 
 module.exports = server

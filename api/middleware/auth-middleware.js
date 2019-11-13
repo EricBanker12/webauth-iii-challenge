@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
 const usersDb = require('../users-model')
+
+const secret = process.env.SECRET || 'secret key'
 
 module.exports = {
     validateReqBody,
@@ -8,6 +11,7 @@ module.exports = {
     hashPassword,
     validateUsername,
     validatePassword,
+    validateToken,
 }
 
 function validateReqBody(req, res, next) {
@@ -76,6 +80,34 @@ function validatePassword(req, res, next) {
         else {
             if (match) next()
             else res.status(401).json({message: 'You shall not pass!'})
+        }
+    })
+}
+
+function validateToken(req, res, next) {
+    if (!req.headers || !req.headers.authorization) {
+        return res.status(400).json({message: 'Missing authorization header'})
+    }
+
+    jwt.verify(req.headers.authorization, secret, (err, decoded) => {
+        if (err) {
+            console.error(err)
+            res.status(401).json({message: 'Invalid Credentials'})
+        }
+        else {
+            const id = decoded.id
+            usersDb.find({id})
+                .then(resp => {
+                    if (resp && resp[0]) {
+                        res.locals.user = resp[0]
+                        next()
+                    }
+                    else res.status(401).json({message: 'You shall not pass!'})
+                })
+                .catch(err => {
+                    console.error(err)
+                    res.sendStatus(500)
+                })
         }
     })
 }
