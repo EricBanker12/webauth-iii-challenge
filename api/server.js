@@ -3,7 +3,7 @@ const helmet = require('helmet')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 
-const {validateReqBody, validateUnique, hashPassword} = require('./middleware/auth-middleware')
+const {validateReqBody, validateUnique, hashPassword, validateUsername, validatePassword} = require('./middleware/auth-middleware')
 const usersDb = require('./users-model')
 
 const server = express()
@@ -25,7 +25,7 @@ server.post('/api/register', validateReqBody, validateUnique, hashPassword, (req
             if (resp && resp[0]) {
                 const {id, username, department} = resp[0]
                 const user = {id, username, department}
-                const token = jwt.sign(user, secret, {expiresIn: '18h'})
+                const token = jwt.sign({id}, secret, {expiresIn: '18h'})
                 res.status(201).json({user, token})
             }
             else {
@@ -38,11 +38,14 @@ server.post('/api/register', validateReqBody, validateUnique, hashPassword, (req
         })
 })
 
-server.post('/api/login', (req, res) => {
-    
+server.post('/api/login', validateReqBody, validateUsername, validatePassword,  (req, res) => {
+    const {id, username, department} = res.locals.user
+    const user = {id, username, department}
+    const token = jwt.sign({id}, secret, {expiresIn: '18h'})
+    res.status(201).json({user, token})
 })
 
-server.post('/api/users', (req, res) => {
+server.get('/api/users', (req, res) => {
     
 })
 

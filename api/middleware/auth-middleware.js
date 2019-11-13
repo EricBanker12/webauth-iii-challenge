@@ -6,6 +6,8 @@ module.exports = {
     validateReqBody,
     validateUnique,
     hashPassword,
+    validateUsername,
+    validatePassword,
 }
 
 function validateReqBody(req, res, next) {
@@ -46,4 +48,34 @@ function hashPassword(req, res, next) {
             console.error(err)
             res.sendStatus(500)
         })
+}
+
+function validateUsername(req, res, next) {
+    const username = req.body.username
+
+    usersDb.find({username})
+        .then(resp => {
+            if (resp && resp[0]) {
+                res.locals.user = resp[0]
+                next()
+            }
+            else res.status(401).json({message: 'You shall not pass!'})
+        })
+        .catch(err => {
+            console.error(err)
+            res.sendStatus(500)
+        })
+}
+
+function validatePassword(req, res, next) {
+    bcrypt.compare(req.body.password, res.locals.user.password, (err, match) => {
+        if (err) {
+            console.error(err)
+            res.sendStatus(500)
+        }
+        else {
+            if (match) next()
+            else res.status(401).json({message: 'You shall not pass!'})
+        }
+    })
 }
